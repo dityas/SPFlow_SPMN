@@ -10,7 +10,53 @@ from networkx.drawing.nx_agraph import graphviz_layout
 # matplotlib.use('Agg')
 import logging
 
+from spn.structure.Base import Leaf, Max, Product, Sum, get_nodes_by_type
+from spn.structure.leaves.spmnLeaves.SPMNLeaf import Utility
+
 logger = logging.getLogger(__name__)
+
+
+def make_graphviz_image(spn, label_names):
+    """
+    Writes SPMN to Graphviz because plotting in networkx, with all due respect,
+    is just objectively shitty
+    """
+    import pygraphviz
+
+    all_nodes = get_nodes_by_type(spn)
+    G = pygraphviz.AGraph()
+
+
+    for node in all_nodes:
+        
+        if isinstance(node, Sum):
+            G.add_node(node, label="+", shape="circle")
+            for i, c in enumerate(node.children):
+                G.add_edge(node, c, label=node.weights[i])
+
+        elif isinstance(node, Product):
+            G.add_node(node, label="x", shape="circle")
+            for i, c in enumerate(node.children):
+                G.add_edge(node, c)
+
+        elif isinstance(node, Max):
+            G.add_node(node, label="MAX", shape="box")
+            for i, c in enumerate(node.children):
+                G.add_edge(node, c)
+
+        elif isinstance(node, Utility):
+            G.add_node(node, label=f"U{node.scope[0]}",
+                       shape="diamond")
+
+        elif isinstance(node, Leaf):
+            G.add_node(node, label=f"{label_names[node.scope[0]]}")
+
+        else:
+            print(f"Unknown node {node} {node.scope}")
+
+    G.draw("graph.png", prog="dot")
+        
+
 
 
 def get_networkx_obj(spn, feature_labels=None):
